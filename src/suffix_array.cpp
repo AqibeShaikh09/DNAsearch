@@ -1,0 +1,65 @@
+#include "suffix_array.h"
+#include <algorithm>
+#include <cstring>
+
+SuffixArray* sa_build(const char* text, size_t length) {
+    if (!text || length == 0) return nullptr;
+    auto* sa = new SuffixArray();
+    sa->text   = text;
+    sa->length = length;
+    sa->array.resize(length);
+    for (size_t i = 0; i < length; i++) sa->array[i] = i;
+
+    // Sort suffixes lexicographically
+    std::sort(sa->array.begin(), sa->array.end(),
+        [text](size_t a, size_t b) {
+            return strcmp(text + a, text + b) < 0;
+        });
+    return sa;
+}
+
+static int prefix_cmp(const SuffixArray* sa, size_t idx,
+                      const std::string& pattern) {
+    return strncmp(sa->text + idx, pattern.c_str(), pattern.size());
+}
+
+std::vector<size_t> sa_search(const SuffixArray* sa, const std::string& pattern) {
+    std::vector<size_t> result;
+    if (!sa || pattern.empty()) return result;
+
+    size_t plen = pattern.size();
+    long lo = 0, hi = static_cast<long>(sa->length) - 1;
+
+    // Find left boundary
+    long left = -1;
+    { long l = lo, h = hi;
+      while (l <= h) {
+          long mid = l + (h - l) / 2;
+          int  cmp = prefix_cmp(sa, sa->array[mid], pattern);
+          if (cmp == 0) { left = mid; h = mid - 1; }
+          else if (cmp < 0) l = mid + 1;
+          else              h = mid - 1;
+      }
+    }
+    if (left < 0) return result;
+
+    // Find right boundary
+    long right = -1;
+    { long l = lo, h = hi;
+      while (l <= h) {
+          long mid = l + (h - l) / 2;
+          int  cmp = prefix_cmp(sa, sa->array[mid], pattern);
+          if (cmp == 0) { right = mid; l = mid + 1; }
+          else if (cmp < 0) l = mid + 1;
+          else              h = mid - 1;
+      }
+    }
+
+    for (long i = left; i <= right; i++)
+        result.push_back(sa->array[i]);
+
+    (void)plen;
+    return result;
+}
+
+void sa_free(SuffixArray* sa) { delete sa; }
