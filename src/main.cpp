@@ -20,7 +20,6 @@ int main(int argc, char* argv[]) {
 
     std::string filepath = argv[1];
 
-    // ── Open DNA file via memory-mapped I/O ──────────────────────────────
     MmapHandle* handle = mmap_open(filepath);
     if (!handle) {
         std::cerr << "Error: could not open '" << filepath << "'\n";
@@ -31,7 +30,6 @@ int main(int argc, char* argv[]) {
     std::cout << "File  : " << filepath << "\n";
     std::cout << "Size  : " << handle->size << " bytes\n";
 
-    // ── Build suffix array index ─────────────────────────────────────────
     std::cout << "\nBuilding suffix array index...\n";
     SuffixArray* sa = sa_build(handle->data, handle->size);
     if (!sa) {
@@ -41,12 +39,9 @@ int main(int argc, char* argv[]) {
     }
     std::cout << "Index built. " << sa->length << " suffixes indexed.\n";
 
-    // ── Initialise hash cache ────────────────────────────────────────────
     HashCache cache(128);
 
-    // ── Search ───────────────────────────────────────────────────────────
     auto do_search = [&](const std::string& pattern) {
-        // Validate: DNA patterns should only contain A, C, G, T
         for (char c : pattern) {
             char u = toupper(c);
             if (u != 'A' && u != 'C' && u != 'G' && u != 'T') {
@@ -56,7 +51,6 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        // 1. Check cache
         const CacheEntry* cached = cache.lookup(pattern);
         if (cached) {
             std::cout << "[cache hit]\n";
@@ -64,17 +58,14 @@ int main(int argc, char* argv[]) {
             return;
         }
 
-        // 2. Narrow candidates via suffix array
         std::vector<size_t> candidates = sa_search(sa, pattern);
 
-        // 3. Confirm with KMP (short patterns) or Boyer-Moore (long patterns)
         SearchResult result;
         if (pattern.size() <= 16)
             result = kmp_search(handle->data, handle->size, pattern);
         else
             result = bm_search(handle->data, handle->size, pattern);
 
-        // 4. Cache and display
         cache.store(pattern, result.positions);
         output_results(result.positions, pattern);
     };
@@ -93,7 +84,6 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // ── Cleanup ──────────────────────────────────────────────────────────
     sa_free(sa);
     mmap_close(handle);
     std::cout << "Bye.\n";

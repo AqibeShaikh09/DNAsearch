@@ -10,7 +10,6 @@ SuffixArray* sa_build(const char* text, size_t length) {
     sa->array.resize(length);
     for (size_t i = 0; i < length; i++) sa->array[i] = i;
 
-    // Sort suffixes lexicographically
     std::sort(sa->array.begin(), sa->array.end(),
         [text](size_t a, size_t b) {
             return strcmp(text + a, text + b) < 0;
@@ -30,7 +29,6 @@ std::vector<size_t> sa_search(const SuffixArray* sa, const std::string& pattern)
     size_t plen = pattern.size();
     long lo = 0, hi = static_cast<long>(sa->length) - 1;
 
-    // Find left boundary
     long left = -1;
     { long l = lo, h = hi;
       while (l <= h) {
@@ -43,7 +41,6 @@ std::vector<size_t> sa_search(const SuffixArray* sa, const std::string& pattern)
     }
     if (left < 0) return result;
 
-    // Find right boundary
     long right = -1;
     { long l = lo, h = hi;
       while (l <= h) {
