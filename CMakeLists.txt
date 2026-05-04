@@ -1,37 +1,42 @@
-#include "output.h"
-#include <iostream>
+cmake_minimum_required(VERSION 3.10)
+project(DNASearch)
 
-void output_results(const std::vector<size_t>& positions,
-                    const std::string& pattern,
-                    const OutputOptions& opts) {
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-    std::string strand_label = opts.is_complement ? " [complement strand]" : " [original strand]";
+include_directories(src)
 
-    if (opts.use_range) {
-        std::cout << "  Range: positions " << opts.range_lo
-                  << " to " << opts.range_hi << "\n";
-    }
+set(SOURCES
+    src/main.cpp
+    src/suffix_array.cpp
+    src/segment_tree.cpp
+    src/hash_cache.cpp
+    src/mmap_reader.cpp
+    src/input.cpp
+    src/output.cpp
+)
 
-    if (positions.empty()) {
-        std::cout << "  Pattern \"" << pattern << "\"" << strand_label
-                  << " : NOT FOUND\n";
-        return;
-    }
+add_executable(dna_search ${SOURCES})
 
-    std::cout << "  Pattern \"" << pattern << "\"" << strand_label
-              << " : " << positions.size() << " match(es)\n";
+enable_testing()
 
-    for (size_t i = 0; i < positions.size(); i++)
-        std::cout << "    [" << i + 1 << "] byte offset: " << positions[i] << "\n";
-}
+set(TEST_SOURCES_COMMON
+    src/suffix_array.cpp
+    src/segment_tree.cpp
+    src/hash_cache.cpp
+    src/mmap_reader.cpp
+    src/input.cpp
+    src/output.cpp
+)
 
-void output_summary(const std::string& original_pattern,
-                    size_t original_count,
-                    size_t complement_count) {
-    size_t total = original_count + complement_count;
-    std::cout << "\n  ── Summary for \"" << original_pattern << "\" ──\n";
-    std::cout << "  Original strand  : " << original_count  << " match(es)\n";
-    std::cout << "  Complement strand: " << complement_count << " match(es)\n";
-    std::cout << "  Total frequency  : " << total << " match(es)\n";
-    std::cout << "  ─────────────────────────────────────\n";
-}
+add_executable(test_suffix_array tests/test_suffix_array.cpp ${TEST_SOURCES_COMMON})
+add_executable(test_segment_tree tests/test_segment_tree.cpp ${TEST_SOURCES_COMMON})
+add_executable(test_cache        tests/test_cache.cpp        ${TEST_SOURCES_COMMON})
+add_executable(test_complement   tests/test_complement.cpp   ${TEST_SOURCES_COMMON})
+add_executable(test_integration  tests/test_integration.cpp  ${TEST_SOURCES_COMMON})
+
+add_test(NAME SuffixArray  COMMAND test_suffix_array)
+add_test(NAME SegmentTree  COMMAND test_segment_tree)
+add_test(NAME Cache        COMMAND test_cache)
+add_test(NAME Complement   COMMAND test_complement)
+add_test(NAME Integration  COMMAND test_integration)
