@@ -3,7 +3,7 @@
 #include <cstdio>
 
 // ── Windows ────────────────────────────────────────────────────────────────
-#ifdef PLATFORM_WINDOWS
+#if defined(_WIN32) || defined(PLATFORM_WINDOWS)
 #include <windows.h>
 
 struct WinImpl { HANDLE file; HANDLE mapping; };
