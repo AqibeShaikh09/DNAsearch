@@ -1,59 +1,37 @@
-cmake_minimum_required(VERSION 3.15)
-project(DNASearchSystem CXX)
+#include "output.h"
+#include <iostream>
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+void output_results(const std::vector<size_t>& positions,
+                    const std::string& pattern,
+                    const OutputOptions& opts) {
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    std::string strand_label = opts.is_complement ? " [complement strand]" : " [original strand]";
 
-if(WIN32)
-    message(STATUS "Platform: Windows")
-    add_compile_definitions(PLATFORM_WINDOWS)
-else()
-    message(STATUS "Platform: Unix/macOS")
-    add_compile_definitions(PLATFORM_UNIX)
-endif()
+    if (opts.use_range) {
+        std::cout << "  Range: positions " << opts.range_lo
+                  << " to " << opts.range_hi << "\n";
+    }
 
-if(MSVC)
-    add_compile_options(/W4)
-else()
-    add_compile_options(-Wall -Wextra -O2)
-endif()
+    if (positions.empty()) {
+        std::cout << "  Pattern \"" << pattern << "\"" << strand_label
+                  << " : NOT FOUND\n";
+        return;
+    }
 
-set(SOURCES
-    src/main.cpp
-    src/kmp.cpp
-    src/bm.cpp
-    src/mmap_reader.cpp
-    src/suffix_array.cpp
-    src/hash_cache.cpp
-    src/input.cpp
-    src/output.cpp
-)
+    std::cout << "  Pattern \"" << pattern << "\"" << strand_label
+              << " : " << positions.size() << " match(es)\n";
 
-add_executable(dna_search ${SOURCES})
+    for (size_t i = 0; i < positions.size(); i++)
+        std::cout << "    [" << i + 1 << "] byte offset: " << positions[i] << "\n";
+}
 
-if(UNIX AND NOT APPLE)
-    target_link_libraries(dna_search m)
-endif()
-
-set(TEST_SHARED_SOURCES
-    src/kmp.cpp
-    src/bm.cpp
-    src/mmap_reader.cpp
-    src/suffix_array.cpp
-    src/hash_cache.cpp
-    src/output.cpp
-    src/input.cpp
-)
-
-add_executable(test_kmp          tests/test_kmp.cpp          ${TEST_SHARED_SOURCES})
-add_executable(test_bm           tests/test_bm.cpp           ${TEST_SHARED_SOURCES})
-add_executable(test_suffix_array tests/test_suffix_array.cpp ${TEST_SHARED_SOURCES})
-add_executable(test_cache        tests/test_cache.cpp        ${TEST_SHARED_SOURCES})
-
-enable_testing()
-add_test(NAME KMP         COMMAND test_kmp)
-add_test(NAME BoyerMoore  COMMAND test_bm)
-add_test(NAME SuffixArray COMMAND test_suffix_array)
-add_test(NAME Cache       COMMAND test_cache)
+void output_summary(const std::string& original_pattern,
+                    size_t original_count,
+                    size_t complement_count) {
+    size_t total = original_count + complement_count;
+    std::cout << "\n  ── Summary for \"" << original_pattern << "\" ──\n";
+    std::cout << "  Original strand  : " << original_count  << " match(es)\n";
+    std::cout << "  Complement strand: " << complement_count << " match(es)\n";
+    std::cout << "  Total frequency  : " << total << " match(es)\n";
+    std::cout << "  ─────────────────────────────────────\n";
+}
